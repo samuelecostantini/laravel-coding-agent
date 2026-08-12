@@ -11,6 +11,7 @@ use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
+use App\Ai\Tools\ExecuteBashCommand;
 use App\Models\AgentConversation;
 use Stringable;
 
@@ -23,7 +24,9 @@ class CodingAgent implements Agent, Conversational, HasTools
      */
     public function instructions(): Stringable|string
     {
-        return 'You are a helpful assistant.';
+        return 
+            'You are an helpful coding agent, you ar running on a Laravel codebase, your db is sqlite, 
+            you have many tools but the most important is ExecuteBashCommandTool.';
     }
 
     /**
@@ -33,7 +36,9 @@ class CodingAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
-        return [];
+        return [
+            new ExecuteBashCommand,            
+        ];
     }
 
     /**

@@ -6,6 +6,10 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use App\Ai\Agents\CodingAgent;
 use App\Models\AgentConversation;
+use App\Console\Prompts\FullWidthTextPromptRenderer;
+use Laravel\Prompts\Prompt;
+use Laravel\Prompts\TextPrompt;
+use Illuminate\Support\Facades\Process;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 
 use function Laravel\Prompts\spin;
@@ -24,6 +28,12 @@ class Conversation extends Command
 
     public function handle()
     {
+        Process::run('clear');
+        Prompt::addTheme('full-width', [
+            TextPrompt::class => FullWidthTextPromptRenderer::class,
+        ]);
+        Prompt::theme('full-width');
+
         $agent = new CodingAgent();
         $this->banner('Welcome into the new Laravel coding agent');
 
@@ -42,7 +52,7 @@ class Conversation extends Command
             ),
             'Thinking…'
         );
-        $this->thinking(json_decode($response->raw, true)['message']['thinking']);
+        $this->thinking(json_decode($response->raw, true)['message']['thinking']?: 'No reasoning provided.');
         $this->divider();
         $this->answer(json_decode($response->raw, true)['message']['content']);
 
@@ -62,7 +72,7 @@ class Conversation extends Command
                 'Thinking…'
             );
 
-            $this->thinking(json_decode($response->raw, true)['message']['thinking']);
+            $this->thinking(json_decode($response->raw, true)['message']['thinking']?: 'No reasoning provided.');
             $this->divider();
             $this->answer(json_decode($response->raw, true)['message']['content']);
         }
