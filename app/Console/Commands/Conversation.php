@@ -11,6 +11,7 @@ use Laravel\Prompts\Prompt;
 use Laravel\Prompts\TextPrompt;
 use Illuminate\Support\Facades\Process;
 use Symfony\Component\Console\Formatter\OutputFormatter;
+use App\ValueObjects\ModelResponse;
 
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\text;
@@ -25,6 +26,7 @@ class Conversation extends Command
     protected $signature = 'launch';
 
     private const WIDTH = 74;
+    private const MODEL = 'gemma4:31b-cloud';
 
     public function handle()
     {
@@ -48,15 +50,17 @@ class Conversation extends Command
         $response = spin(
             fn () => $agent->forUser($user)->prompt($input,
                 provider: config('ai.providers.ollama.driver'),
-                model: 'deepseek-v4-flash:cloud'
+                model: self::MODEL
             ),
             'Thinking…'
         );
-        $this->thinking(json_decode($response->raw, true)['message']['thinking']?: 'No reasoning provided.');
+        $responseObject = new ModelResponse($response->raw);
+        $this->thinking($responseObject->thinking);
         $this->divider();
-        $this->answer(json_decode($response->raw, true)['message']['content']);
+        $this->answer($responseObject->message);
 
         while (true) {
+
             $input = $this->prompt('Prompt');
             if (strtolower($input) === '/exit') {
                 $this->newLine();
@@ -64,17 +68,24 @@ class Conversation extends Command
                 $this->newLine();
                 break;
             }
-            $response = spin(
-                fn () => $agent->continueLastConversation($user)->prompt($input,
-                    provider: config('ai.providers.ollama.driver'),
-                    model: 'deepseek-v4-flash:cloud'
-                ),
-                'Thinking…'
-            );
+            
+            do{
+                $response = spin(
+                    fn () => $agent->continueLastConversation($user)->prompt($input,
+                        provider: config('ai.providers.ollama.driver'),
+                        model: self::MODEL
+                    ),
+                    'Thinking…'
+                );
 
-            $this->thinking(json_decode($response->raw, true)['message']['thinking']?: 'No reasoning provided.');
+                $responseObject = new ModelResponse($response->raw);
+
+                $this->thinking($responseObject->thinking);
+                $input = $responseObject->thought;
+            }while($responseObject->need_to_reasoning);
+
             $this->divider();
-            $this->answer(json_decode($response->raw, true)['message']['content']);
+            $this->answer($responseObject->message);
         }
     }
 
