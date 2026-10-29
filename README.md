@@ -32,7 +32,7 @@ php artisan migrate
 
 Begin a coding session by starting a conversation with the AI assistant:
 ```bash
-php artisan ai:chat
+php artisan launch
 ```
 
 ### Generating Code
